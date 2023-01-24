@@ -1,23 +1,36 @@
-const container = document.getElementById('root') // root태그가 반복되어 변수로 선언
-let ajax = new XMLHttpRequest(); //ajax 객체 호출
-const content = document.createElement('div');
+type Store = {
+    currentPage: number;
+    feeds: NewsFeed[];
 
+}
+
+type NewsFeed = {
+    id: number;
+    url: string;
+    user: string;
+    time_ago: string;
+    points: number;
+    title: string;
+    read?: boolean;
+
+}
+const container: HTMLElement | null = document.getElementById('root') // root태그가 반복되어 변수로 선언
+let ajax: XMLHttpRequest = new XMLHttpRequest(); //ajax 객체 호출
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json'
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json'
-const store = {
-  currentPage: 1,
-  feeds: [],
+const store: Store = {
+    currentPage: 1,
+    feeds: [],
 };
 
 
-
 function getData(url) {
-  // ajax 호출
-  ajax.open('get', url, false);
-  ajax.send();
+    // ajax 호출
+    ajax.open('get', url, false);
+    ajax.send();
 
 // ajax 리스폰스
-  return JSON.parse(ajax.response);
+    return JSON.parse(ajax.response);
 }
 
 
@@ -26,17 +39,26 @@ function getData(url) {
 const ul = document.createElement('ul');
 
 function makeFeed(feeds) {
-  for (let i = 0; i < feeds.length; i++) {
-    feeds[i].read = false;
-  }
-  return feeds;
+    for (let i = 0; i < feeds.length; i++) {
+        feeds[i].read = false;
+    }
+    return feeds;
 }
 
+function updateView(html) {
+    // container가 null을 허용하는 타입이므로 널체크를 해줘야 에러가 안남.
+    if (container) {
+        container.innerHTML = html;
+    } else {
+        console.error('최상위 컨테이너가 없어 UI를 진행하지 못합니다.');
+    }
+    ;
+}
 
 function newsFeed() {
-  let newsFeed = store.feeds;
-  const newsList = [];
-  let  template = `
+    let newsFeed: NewsFeed[] = store.feeds;
+    const newsList = [];
+    let template = `
     <div class="bg-gray-600 min-h-screen">
       <div class="bg-white text-xl">
         <div class="mx-auto px-4">
@@ -61,14 +83,14 @@ function newsFeed() {
     </div>
   `;
 
-  if(newsFeed.length === 0) {
-    newsFeed = store.feeds = makeFeed(getData(NEWS_URL));
-  }
-  /*데이터를 생성된 태그 안에 넣음*/
+    if (newsFeed.length === 0) {
+        newsFeed = store.feeds = makeFeed(getData(NEWS_URL));
+    }
+    /*데이터를 생성된 태그 안에 넣음*/
 // li태그 갯수대로 반복
-  for (let i = (store.currentPage - 1)  * 10; i < store.currentPage * 10; i++) {
-    /*DOM API를 사용하면 구조를 명확하게 파악할 수 없어서 innerHTML과 문자열 템플릿을 이용하여 가시성이 좋게 만듬.*/
-    newsList.push(`
+    for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
+        /*DOM API를 사용하면 구조를 명확하게 파악할 수 없어서 innerHTML과 문자열 템플릿을 이용하여 가시성이 좋게 만듬.*/
+        newsList.push(`
       <div class="p-6 ${newsFeed[i].read ? 'bg-red-500' : 'bg-white'} mt-6 rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
         <div class="flex">
           <div class="flex-auto">
@@ -87,20 +109,21 @@ function newsFeed() {
         </div>
       </div>    
   `);
-  }
+    }
 
-template = template.replace('{{__news_feed__}}', newsList.join(''));
-template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
-template = template.replace('{{__next_page__}}', store.currentPage + 1);
-// 완성된 컨텐츠를 root 태그 밑에 붙임
-  container.innerHTML = template;//join 을 하게 되면 배열을 문자열로 쭉 붙여줌, 디폴트는 콤마로 연결. 파라미터를 통해 변경가능
+    template = template.replace('{{__news_feed__}}', newsList.join(''));
+    template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
+    template = template.replace('{{__next_page__}}', store.currentPage + 1);
+
+
+    updateView(template);
 }
 
 
 function newsDetail() {
-  const id = location.hash.substring(7);
-  const newsContent = getData(CONTENT_URL.replace('@id', id));
-  let template = `
+    const id = location.hash.substring(7);
+    const newsContent = getData(CONTENT_URL.replace('@id', id));
+    let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
         <div class="mx-auto px-4">
@@ -129,18 +152,18 @@ function newsDetail() {
     </div>
   `;
 
-  for (let i = 0; i < store.feeds.length; i++) {
-    if (store.feeds[i].id === Number(id)) {
-      store.feeds[i].read = true;
-      break;
+    for (let i = 0; i < store.feeds.length; i++) {
+        if (store.feeds[i].id === Number(id)) {
+            store.feeds[i].read = true;
+            break;
+        }
     }
-  }
 
-  function makeComment(comments, called = 0) {
-    const commentString = [];
+    function makeComment(comments, called = 0) {
+        const commentString = [];
 
-    for (let i = 0; i < comments.length; i++) {
-      commentString.push(`
+        for (let i = 0; i < comments.length; i++) {
+            commentString.push(`
         <div style="padding-left: ${called * 40}px;" class="mt-4">
           <div class="text-gray-400">
             <i class="fa fa-sort-up mr-2"></i>
@@ -150,33 +173,33 @@ function newsDetail() {
         </div>      
       `);
 
-      if (comments[i].comments.length > 0) {
-        commentString.push(makeComment(comments[i].comments, called + 1));
-      }
+            if (comments[i].comments.length > 0) {
+                commentString.push(makeComment(comments[i].comments, called + 1));
+            }
+        }
+
+        return commentString.join('')
     }
 
-    return commentString.join('')
-  }
+    updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
 
-  container.innerHTML = template.replace('{{__comments__}}', makeComment(newsContent.comments));
 }
 
 /*브라우저 API를 이용하여 hashchange가 일어나면 함수호출*/
-window.addEventListener('hashchange',router);
+window.addEventListener('hashchange', router);
 
 function router() {
-  const routePath = location.hash;
+    const routePath = location.hash;
 
-  if (routePath === '') {
-    newsFeed();
-  } else if(routePath.indexOf('#/page/') >= 0) {
-    store.currentPage = Number(routePath.substring(7));
-    newsFeed();
-  } else {
-    newsDetail();
-  }
+    if (routePath === '') {
+        newsFeed();
+    } else if (routePath.indexOf('#/page/') >= 0) {
+        store.currentPage = Number(routePath.substring(7));
+        newsFeed();
+    } else {
+        newsDetail();
+    }
 }
-
 
 
 router();
