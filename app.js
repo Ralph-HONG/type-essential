@@ -28,7 +28,18 @@ const ul = document.createElement('ul');
 function newsFeed() {
   const newsFeed = getData(NEWS_URL);
   const newsList = [];
-  newsList.push('<ul>');
+  let  template = `
+    <div class="container mx-auto p-4">
+    <h1>Hacker News</h1>
+      <ul>
+        {{__news_feed__}}
+      </ul>
+      <div>
+        <a href="#/page/{{__prev_page__}}">이전 페이지</a>
+        <a href="#/page/{{__next_page__}}">다음 페이지</a>
+      </div>
+    </div>
+  `;
 
   /*데이터를 생성된 태그 안에 넣음*/
 // li태그 갯수대로 반복
@@ -42,15 +53,12 @@ function newsFeed() {
     </li>
   `);
   }
+
+  template = template.replace('{{__news_feed__}}', newsList.join(''));
+  template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
+  template = template.replace('{{__next_page__}}', store.currentPage + 1);
 // 완성된 컨텐츠를 root 태그 밑에 붙임
-  newsList.push('</ul>');
-  newsList.push(`
-    <div>
-      <a href="#/page/${store.currentPage > 1 ? store.currentPage - 1 : 1}">이전 페이지</a>
-      <a href="#/page/${store.currentPage < 3 ? store.currentPage + 1 : 3}">다음 페이지</a>
-  </div>
-`);
-  container.innerHTML = newsList.join(''); //join 을 하게 되면 배열을 문자열로 쭉 붙여줌, 디폴트는 콤마로 연결. 파라미터를 통해 변경가능
+  container.innerHTML = template;//join 을 하게 되면 배열을 문자열로 쭉 붙여줌, 디폴트는 콤마로 연결. 파라미터를 통해 변경가능
 }
 
 
