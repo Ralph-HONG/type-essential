@@ -6,6 +6,7 @@ const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json'
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json'
 const store = {
   currentPage: 1,
+  feeds: [],
 };
 
 
@@ -24,9 +25,16 @@ function getData(url) {
 // ul 태그 생성
 const ul = document.createElement('ul');
 
+function makeFeed(feeds) {
+  for (let i = 0; i < feeds.length; i++) {
+    feeds[i].read = false;
+  }
+  return feeds;
+}
+
 
 function newsFeed() {
-  const newsFeed = getData(NEWS_URL);
+  let newsFeed = store.feeds;
   const newsList = [];
   let  template = `
     <div class="bg-gray-600 min-h-screen">
@@ -53,6 +61,9 @@ function newsFeed() {
     </div>
   `;
 
+  if(newsFeed.length === 0) {
+    newsFeed = store.feeds = makeFeed(getData(NEWS_URL));
+  }
   /*데이터를 생성된 태그 안에 넣음*/
 // li태그 갯수대로 반복
   for (let i = (store.currentPage - 1)  * 10; i < store.currentPage * 10; i++) {
@@ -117,6 +128,13 @@ function newsDetail() {
       </div>
     </div>
   `;
+
+  for (let i = 0; i < store.feeds.length; i++) {
+    if (store.feeds[i].id === Number(id)) {
+      store.feeds[i].read = true;
+      break;
+    }
+  }
 
   function makeComment(comments, called = 0) {
     const commentString = [];
