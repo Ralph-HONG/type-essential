@@ -1,36 +1,49 @@
 type Store = {
-    currentPage: number;
-    feeds: NewsFeed[];
-
+  currentPage: number;
+  feeds: NewsFeed[];
 }
 
-type NewsFeed = {
-    id: number;
-    url: string;
-    user: string;
-    time_ago: string;
-    points: number;
-    title: string;
-    read?: boolean;
+type News = {
+  id: number;
+  time_ago: string;
+  title: string;
+  url: string;
+  user: string;
+  content: string;
+}
 
+type NewsFeed = News & { // 타입 인터섹션
+  points: number;
+  comments_count: 0;
+  read?: boolean;
+}
+
+type NewsDetail = News & { // 타입 인터섹션
+  comments:[];
+}
+
+type NewsComment = News & { // 타입 인터섹션
+  type: string;
+  comments: [];
+  level: number;
 }
 const container: HTMLElement | null = document.getElementById('root') // root태그가 반복되어 변수로 선언
 let ajax: XMLHttpRequest = new XMLHttpRequest(); //ajax 객체 호출
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json'
 const CONTENT_URL = 'https://api.hnpwa.com/v0/item/@id.json'
 const store: Store = {
-    currentPage: 1,
-    feeds: [],
+  currentPage: 1,
+  feeds: [],
 };
 
 
-function getData(url) {
-    // ajax 호출
-    ajax.open('get', url, false);
-    ajax.send();
+function getData<AjaxResponse>(url: string): AjaxResponse {
+  // ajax 호출
+  ajax.open('get', url, false);
+  ajax.send();
 
 // ajax 리스폰스
-    return JSON.parse(ajax.response);
+  return JSON.parse(ajax.response);
 }
 
 
@@ -38,24 +51,23 @@ function getData(url) {
 // ul 태그 생성
 const ul = document.createElement('ul');
 
-function makeFeed(feeds) {
-    for (let i = 0; i < feeds.length; i++) {
-        feeds[i].read = false;
-    }
-    return feeds;
+function makeFeed(feeds: NewsFeed[]): NewsFeed[] {
+  for (let i = 0; i < feeds.length; i++) {
+    feeds[i].read = false;
+  }
+  return feeds;
 }
 
-function updateView(html) {
-    // container가 null을 허용하는 타입이므로 널체크를 해줘야 에러가 안남.
-    if (container) {
-        container.innerHTML = html;
-    } else {
-        console.error('최상위 컨테이너가 없어 UI를 진행하지 못합니다.');
-    }
-    ;
+function updateView(html: string): void {
+  // container가 null을 허용하는 타입이므로 널체크를 해줘야 에러가 안남.
+  if (container) {
+    container.innerHTML = html;
+  } else {
+    console.error('최상위 컨테이너가 없어 UI를 진행하지 못합니다.');
+  }
 }
 
-function newsFeed() {
+function newsFeed(): void {
     let newsFeed: NewsFeed[] = store.feeds;
     const newsList = [];
     let template = `
@@ -84,7 +96,7 @@ function newsFeed() {
   `;
 
     if (newsFeed.length === 0) {
-        newsFeed = store.feeds = makeFeed(getData(NEWS_URL));
+        newsFeed = store.feeds = makeFeed(getData<NewsFeed[]>(NEWS_URL));
     }
     /*데이터를 생성된 태그 안에 넣음*/
 // li태그 갯수대로 반복
@@ -112,17 +124,17 @@ function newsFeed() {
     }
 
     template = template.replace('{{__news_feed__}}', newsList.join(''));
-    template = template.replace('{{__prev_page__}}', store.currentPage > 1 ? store.currentPage - 1 : 1);
-    template = template.replace('{{__next_page__}}', store.currentPage + 1);
+    template = template.replace('{{__prev_page__}}', String(store.currentPage > 1 ? store.currentPage - 1 : 1));
+    template = template.replace('{{__next_page__}}', String(store.currentPage + 1));
 
 
     updateView(template);
 }
 
 
-function newsDetail() {
+function newsDetail(): void {
     const id = location.hash.substring(7);
-    const newsContent = getData(CONTENT_URL.replace('@id', id));
+    const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
     let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
@@ -159,22 +171,23 @@ function newsDetail() {
         }
     }
 
-    function makeComment(comments, called = 0) {
+    function makeComment(comments: NewsComment[]): string {
         const commentString = [];
 
         for (let i = 0; i < comments.length; i++) {
+          const comment: NewsComment = comments[i];
             commentString.push(`
-        <div style="padding-left: ${called * 40}px;" class="mt-4">
+        <div style="padding-left: ${comment.level * 40}px;" class="mt-4">
           <div class="text-gray-400">
             <i class="fa fa-sort-up mr-2"></i>
-            <strong>${comments[i].user}</strong> ${comments[i].time_ago}
+            <strong>${comment.user}</strong> ${comment.time_ago}
           </div>
-          <p class="text-gray-700">${comments[i].content}</p>
+          <p class="text-gray-700">${comment.content}</p>
         </div>      
       `);
 
-            if (comments[i].comments.length > 0) {
-                commentString.push(makeComment(comments[i].comments, called + 1));
+            if (comment.comments.length > 0) {
+                commentString.push(makeComment(comment.comments));
             }
         }
 
@@ -188,7 +201,7 @@ function newsDetail() {
 /*브라우저 API를 이용하여 hashchange가 일어나면 함수호출*/
 window.addEventListener('hashchange', router);
 
-function router() {
+function router(): void {
     const routePath = location.hash;
 
     if (routePath === '') {
