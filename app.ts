@@ -41,6 +41,38 @@ const store: Store = {
   feeds: [],
 };
 
+class Api {
+  url:string;
+  ajax: XMLHttpRequest;
+  constructor(url: string) {
+    this.url = url;
+    this.ajax = new XMLHttpRequest();
+  }
+  getRequest<AjaxResponse>(): AjaxResponse {
+
+  }
+}
+
+
+class NewsFeedApi extends Api {
+  getData(): NewsFeed[] {
+    ajax.open('get', url, false);
+    ajax.send();
+
+// ajax 리스폰스
+    return JSON.parse(ajax.response);
+  }
+}
+
+class NewsDetailApi extends Api {
+  getData(): NewsFeed[] {
+    ajax.open('get', url, false);
+    ajax.send();
+
+// ajax 리스폰스
+    return JSON.parse(ajax.response);
+  }
+}
 
 function getData<AjaxResponse>(url: string): AjaxResponse {
   // ajax 호출
