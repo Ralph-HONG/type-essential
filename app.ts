@@ -1,31 +1,36 @@
-type Store = {
+
+/**
+ *type alias와 interface의 차이는 이퀄(=)표시의 차이와
+ * 앰퍼샌드(&)를 이용한 타입 인터섹션을 사용하지 않도 extends를 사용.
+ * interface는 uniontype을 허용하지 않아서 꼭 필요한 경우 type alias를 사용함*/
+interface Store  {
   currentPage: number;
   feeds: NewsFeed[];
 }
 
-type News = {
-  id: number;
-  time_ago: string;
-  title: string;
-  url: string;
-  user: string;
-  content: string;
+interface News  {
+  readonly id: number;
+  readonly time_ago: string;
+  readonly title: string;
+  readonly url: string;
+  readonly user: string;
+  readonly content: string;
 }
 
-type NewsFeed = News & { // 타입 인터섹션
-  points: number;
-  comments_count: 0;
+interface NewsFeed extends News { // 타입 인터섹션
+  readonly points: number;
+  readonly comments_count: 0;
   read?: boolean;
 }
 
-type NewsDetail = News & { // 타입 인터섹션
-  comments:[];
+interface NewsDetail extends News { // 타입 인터섹션
+  readonly comments:[];
 }
 
-type NewsComment = News & { // 타입 인터섹션
-  type: string;
-  comments: [];
-  level: number;
+interface NewsComment extends News { // 타입 인터섹션
+  readonly type: string;
+  readonly comments: [];
+  readonly level: number;
 }
 const container: HTMLElement | null = document.getElementById('root') // root태그가 반복되어 변수로 선언
 let ajax: XMLHttpRequest = new XMLHttpRequest(); //ajax 객체 호출
