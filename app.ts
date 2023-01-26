@@ -1,14 +1,13 @@
-
 /**
  *type alias와 interface의 차이는 이퀄(=)표시의 차이와
  * 앰퍼샌드(&)를 이용한 타입 인터섹션을 사용하지 않도 extends를 사용.
  * interface는 uniontype을 허용하지 않아서 꼭 필요한 경우 type alias를 사용함*/
-interface Store  {
+interface Store {
   currentPage: number;
   feeds: NewsFeed[];
 }
 
-interface News  {
+interface News {
   readonly id: number;
   readonly time_ago: string;
   readonly title: string;
@@ -24,7 +23,7 @@ interface NewsFeed extends News { // 타입 인터섹션
 }
 
 interface NewsDetail extends News { // 타입 인터섹션
-  readonly comments:[];
+  readonly comments: [];
 }
 
 interface NewsComment extends News { // 타입 인터섹션
@@ -32,6 +31,7 @@ interface NewsComment extends News { // 타입 인터섹션
   readonly comments: [];
   readonly level: number;
 }
+
 const container: HTMLElement | null = document.getElementById('root') // root태그가 반복되어 변수로 선언
 let ajax: XMLHttpRequest = new XMLHttpRequest(); //ajax 객체 호출
 const NEWS_URL = 'https://api.hnpwa.com/v0/news/1.json'
@@ -42,45 +42,35 @@ const store: Store = {
 };
 
 class Api {
-  url:string;
+  url: string;
   ajax: XMLHttpRequest;
+
   constructor(url: string) {
     this.url = url;
     this.ajax = new XMLHttpRequest();
   }
-  getRequest<AjaxResponse>(): AjaxResponse {
 
+  protected getRequest<AjaxResponse>(): AjaxResponse {
+    this.ajax.open('get', this.url, false);
+    this.ajax.send();
+
+// ajax 리스폰스
+    return JSON.parse(this.ajax.response);
   }
 }
 
 
 class NewsFeedApi extends Api {
   getData(): NewsFeed[] {
-    ajax.open('get', url, false);
-    ajax.send();
-
-// ajax 리스폰스
-    return JSON.parse(ajax.response);
+    return this.getRequest<NewsFeed[]>();
   }
 }
 
 class NewsDetailApi extends Api {
-  getData(): NewsFeed[] {
-    ajax.open('get', url, false);
-    ajax.send();
+  getData(): NewsDetail {
+    return this.getRequest<NewsDetail>();
 
-// ajax 리스폰스
-    return JSON.parse(ajax.response);
   }
-}
-
-function getData<AjaxResponse>(url: string): AjaxResponse {
-  // ajax 호출
-  ajax.open('get', url, false);
-  ajax.send();
-
-// ajax 리스폰스
-  return JSON.parse(ajax.response);
 }
 
 
@@ -105,9 +95,10 @@ function updateView(html: string): void {
 }
 
 function newsFeed(): void {
-    let newsFeed: NewsFeed[] = store.feeds;
-    const newsList = [];
-    let template = `
+  const api = new NewsFeedApi(NEWS_URL);
+  let newsFeed: NewsFeed[] = store.feeds;
+  const newsList = [];
+  let template = `
     <div class="bg-gray-600 min-h-screen">
       <div class="bg-white text-xl">
         <div class="mx-auto px-4">
@@ -132,14 +123,14 @@ function newsFeed(): void {
     </div>
   `;
 
-    if (newsFeed.length === 0) {
-        newsFeed = store.feeds = makeFeed(getData<NewsFeed[]>(NEWS_URL));
-    }
-    /*데이터를 생성된 태그 안에 넣음*/
+  if (newsFeed.length === 0) {
+    newsFeed = store.feeds = makeFeed(api.getData());
+  }
+  /*데이터를 생성된 태그 안에 넣음*/
 // li태그 갯수대로 반복
-    for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
-        /*DOM API를 사용하면 구조를 명확하게 파악할 수 없어서 innerHTML과 문자열 템플릿을 이용하여 가시성이 좋게 만듬.*/
-        newsList.push(`
+  for (let i = (store.currentPage - 1) * 10; i < store.currentPage * 10; i++) {
+    /*DOM API를 사용하면 구조를 명확하게 파악할 수 없어서 innerHTML과 문자열 템플릿을 이용하여 가시성이 좋게 만듬.*/
+    newsList.push(`
       <div class="p-6 ${newsFeed[i].read ? 'bg-red-500' : 'bg-white'} mt-6 rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
         <div class="flex">
           <div class="flex-auto">
@@ -158,21 +149,22 @@ function newsFeed(): void {
         </div>
       </div>    
   `);
-    }
+  }
 
-    template = template.replace('{{__news_feed__}}', newsList.join(''));
-    template = template.replace('{{__prev_page__}}', String(store.currentPage > 1 ? store.currentPage - 1 : 1));
-    template = template.replace('{{__next_page__}}', String(store.currentPage + 1));
+  template = template.replace('{{__news_feed__}}', newsList.join(''));
+  template = template.replace('{{__prev_page__}}', String(store.currentPage > 1 ? store.currentPage - 1 : 1));
+  template = template.replace('{{__next_page__}}', String(store.currentPage + 1));
 
 
-    updateView(template);
+  updateView(template);
 }
 
 
 function newsDetail(): void {
-    const id = location.hash.substring(7);
-    const newsContent = getData<NewsDetail>(CONTENT_URL.replace('@id', id));
-    let template = `
+  const id = location.hash.substring(7);
+  const api = new NewsDetailApi(CONTENT_URL.replace('@id', id));
+  const newsContent = api.getData();
+  let template = `
     <div class="bg-gray-600 min-h-screen pb-8">
       <div class="bg-white text-xl">
         <div class="mx-auto px-4">
@@ -201,19 +193,19 @@ function newsDetail(): void {
     </div>
   `;
 
-    for (let i = 0; i < store.feeds.length; i++) {
-        if (store.feeds[i].id === Number(id)) {
-            store.feeds[i].read = true;
-            break;
-        }
+  for (let i = 0; i < store.feeds.length; i++) {
+    if (store.feeds[i].id === Number(id)) {
+      store.feeds[i].read = true;
+      break;
     }
+  }
 
-    function makeComment(comments: NewsComment[]): string {
-        const commentString = [];
+  function makeComment(comments: NewsComment[]): string {
+    const commentString = [];
 
-        for (let i = 0; i < comments.length; i++) {
-          const comment: NewsComment = comments[i];
-            commentString.push(`
+    for (let i = 0; i < comments.length; i++) {
+      const comment: NewsComment = comments[i];
+      commentString.push(`
         <div style="padding-left: ${comment.level * 40}px;" class="mt-4">
           <div class="text-gray-400">
             <i class="fa fa-sort-up mr-2"></i>
@@ -223,15 +215,15 @@ function newsDetail(): void {
         </div>      
       `);
 
-            if (comment.comments.length > 0) {
-                commentString.push(makeComment(comment.comments));
-            }
-        }
-
-        return commentString.join('')
+      if (comment.comments.length > 0) {
+        commentString.push(makeComment(comment.comments));
+      }
     }
 
-    updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
+    return commentString.join('')
+  }
+
+  updateView(template.replace('{{__comments__}}', makeComment(newsContent.comments)));
 
 }
 
@@ -239,16 +231,16 @@ function newsDetail(): void {
 window.addEventListener('hashchange', router);
 
 function router(): void {
-    const routePath = location.hash;
+  const routePath = location.hash;
 
-    if (routePath === '') {
-        newsFeed();
-    } else if (routePath.indexOf('#/page/') >= 0) {
-        store.currentPage = Number(routePath.substring(7));
-        newsFeed();
-    } else {
-        newsDetail();
-    }
+  if (routePath === '') {
+    newsFeed();
+  } else if (routePath.indexOf('#/page/') >= 0) {
+    store.currentPage = Number(routePath.substring(7));
+    newsFeed();
+  } else {
+    newsDetail();
+  }
 }
 
 
